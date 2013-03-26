@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#transform RAW to enfuse
+VALUE=`zenity --scale --text="Exposition" --value=0 --min-value=-2 --max-value=2`
+
+fpaths=`echo "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | sort`
+
+for file in $fpaths
+do
+  if [ -f "$file" ]; then
+	base=${file%.*}
+	ext=${file##*.}
+	if [ "$ext" == "CR2" ]; then
+mkdir process
+#tirer 3 copies claire obscur normal du RAW
+ufraw-batch --wb=camera --exposure=$VALUE%-2 --saturation=1.25 --black-point=auto --out-type=tiff --out-depth=8 --output=process/N2.tiff $file
+ufraw-batch --wb=camera --exposure=$VALUE% --saturation=1.25 --black-point=auto --out-type=tiff --out-depth=8 --output=process/0.tiff $file
+ufraw-batch --wb=camera --exposure=$VALUE%2 --saturation=1.25 --black-point=auto --out-type=tiff --out-depth=8 --output=process/P2.tiff $file
+
+#enfuse
+enfuse -o process/enfuse.tif process/N2.tiff process/0.tiff process/P2.tiff 
+
+#generating jpg
+convert  process/enfuse.tif $base.jpg
+#cleaning
+rm -r process/
+        exiftool -tagsFromFile $file $base.jpg
+       
+	fi
+  fi
+done
+
+
